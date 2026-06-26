@@ -84,7 +84,6 @@ def download_code():
     with tarfile.open(fileobj=buf, mode="w:gz") as tar:
         base = os.path.dirname(os.path.abspath(__file__))
         for root, dirs, files in os.walk(base):
-            # 跳过不需要的
             if "__pycache__" in root or ".git" in root or ".edgeone" in root:
                 continue
             for f in files:
@@ -104,4 +103,4 @@ if __name__ == "__main__":
     from models.database import init_db
     init_db()
     print("🚀 高考志愿填报助手启动: http://localhost:5000")
-    app.run(host="0.0.0.0", port=5000, debug=DEBUG)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=DEBUG)
