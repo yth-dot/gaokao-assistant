@@ -1,12 +1,12 @@
 """Flask 应用入口"""
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify
 from config import SECRET_KEY, DEBUG
+import threading, time, requests, os, datetime
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
-# 自动保活：每8分钟调用自身 health 接口，防止 Render 休眠
-import threading, time, requests, os
 
+# 自动保活：每8分钟调用自身 health 接口，防止 Render 休眠
 def keepalive():
     time.sleep(60)
     url = f"http://localhost:{os.environ.get('PORT', 5000)}/health"
@@ -19,6 +19,13 @@ def keepalive():
 
 threading.Thread(target=keepalive, daemon=True).start()
 
+# 初始化访问统计表
+def _init_visitors():
+    from models.database import get_db
+    db = get_db()
+    db.execute("CREATE TABLE IF NOT EXISTS visitors (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT, date TEXT, count INTEGER, UNIQUE(ip, date))")
+    db.commit()
+
 # 注册路由
 from routes.api_schools import schools_bp
 from routes.api_majors import majors_bp
@@ -28,10 +35,36 @@ app.register_blueprint(schools_bp)
 app.register_blueprint(majors_bp)
 app.register_blueprint(ai_bp)
 
+# 访问统计中间件
+@app.before_request
+def track_visitor():
+    if request.path in ('/health', '/api/visitors'):
+        return
+    try:
+        from models.database import get_db
+        db = get_db()
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr or 'unknown').split(',')[0].strip()
+        today = datetime.date.today().isoformat()
+        db.execute(
+            "INSERT INTO visitors (ip, date, count) VALUES (?, ?, 1) ON CONFLICT(ip, date) DO UPDATE SET count = count + 1",
+            (ip, today)
+        )
+        db.commit()
+    except:
+        pass
 
 @app.route("/")
 def index():
+    _init_visitors()
     return render_template("index.html")
+
+@app.route("/api/visitors")
+def api_visitors():
+    from models.database import query
+    today = datetime.date.today().isoformat()
+    today_count = query("SELECT COUNT(*) as c FROM visitors WHERE date = ?", (today,), one=True)["c"]
+    total_count = query("SELECT COUNT(DISTINCT ip) as c FROM visitors", one=True)["c"]
+    return jsonify({"code": 0, "data": {"today": today_count, "total": total_count}})
 
 
 @app.route("/health")
@@ -68,8 +101,7 @@ def download_code():
 
 
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    print(f"🚀 启动 http://0.0.0.0:{port}")
-    app.run(host="0.0.0.0", port=port, debug=False)
-
+    from models.database import init_db
+    init_db()
+    print("🚀 高考志愿填报助手启动: http://localhost:5000")
+    app.run(host="0.0.0.0", port=5000, debug=DEBUG)
