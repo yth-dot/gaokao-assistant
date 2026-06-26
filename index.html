@@ -243,6 +243,12 @@ a{text-decoration:none}
   .card-grid{grid-template-columns:repeat(2,1fr)}
   .card-grid.sm{grid-template-columns:repeat(2,1fr)}
 }
+
+/* 浮动电话按钮 */
+.float-phone{position:fixed;right:20px;bottom:80px;width:56px;height:56px;background:linear-gradient(135deg,#1a73e8,#0d47a1);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(26,115,232,.4);z-index:999;cursor:pointer;transition:all .3s;animation:floatPulse 2s ease-in-out infinite}
+.float-phone:hover{transform:scale(1.1);box-shadow:0 6px 24px rgba(26,115,232,.5)}
+.float-phone span{color:#fff;font-size:22px;font-weight:700;text-decoration:none}
+@keyframes floatPulse{0%,100%{box-shadow:0 4px 16px rgba(26,115,232,.4)}50%{box-shadow:0 6px 28px rgba(26,115,232,.6)}}
 </style>
 </head>
 <body>
@@ -695,7 +701,13 @@ a{text-decoration:none}
         <p>如发现数据错误或功能建议，欢迎反馈。</p>
         <p>数据纠错：如院校分类、分数线有误，请提供官方来源</p>
         <p style="margin-top:8px;color:#888;font-size:12px">
+          &#x1F465; 今日访问 [[ visitorToday ]] · 累计访客 [[ visitorTotal ]]
+        </p>
+        <p style="margin-top:4px;color:#888;font-size:12px">
           &copy; 2026 高考志愿填报助手 · 完全免费 · 仅供参考
+        </p>
+        <p style="margin-top:8px;color:#1a73e8;font-size:13px;font-weight:600">
+          &#x260E;&#xFE0F; 咨询热线：199-3905-7129
         </p>
       </div>
     </div>
@@ -794,6 +806,8 @@ a{text-decoration:none}
 
       // --- Stats ---
       var stats = reactive({ schools: 0, majors: 0, provinces: 31 });
+      var visitorToday = ref(0);
+      var visitorTotal = ref(0);
 
       // --- Schools ---
       var schools = ref([]);
@@ -902,6 +916,16 @@ a{text-decoration:none}
         }).catch(function() {});
         fetchJSON(API + '/majors?page_size=1').then(function(d) {
           if (d.code === 0) stats.majors = d.total || 0;
+        }).catch(function() {});
+        loadVisitors();
+      }
+
+      function loadVisitors() {
+        fetchJSON(API + '/visitors').then(function(d) {
+          if (d.code === 0) {
+            visitorToday.value = d.data.today;
+            visitorTotal.value = d.data.total;
+          }
         }).catch(function() {});
       }
 
@@ -1090,10 +1114,15 @@ a{text-decoration:none}
 
       // --- Init ---
       onMounted(function() {
-        loadStats();
-        loadProvinces();
-        loadHotSchools();
-        loadDisciplines();
+        // 访问统计轻量查询，立即加载
+        loadVisitors();
+        // 重查询延迟，让首页先渲染出来
+        setTimeout(function() {
+          loadStats();
+          loadProvinces();
+          loadHotSchools();
+          loadDisciplines();
+        }, 300);
       });
 
       // Ranking
@@ -1166,7 +1195,8 @@ a{text-decoration:none}
         loadSchools, onSchoolFilterChange, quickFilter,
         loadMajors, onMajorFilterChange,
         doRecommend, searchCompareSchools, doCompare,
-        doGlobalSearch, showSchoolDetail, showMajorDetail, switchPage
+        doGlobalSearch, showSchoolDetail, showMajorDetail, switchPage,
+        visitorToday, visitorTotal
       };
     }
   });
@@ -1175,5 +1205,10 @@ a{text-decoration:none}
   app.mount('#app');
 })();
 </script>
+
+<!-- 浮动电话按钮 -->
+<a href="tel:19939057129" class="float-phone" title="点击拨打咨询热线">
+  <span>&#x260E;</span>
+</a>
 </body>
 </html>
