@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt gunicorn
+
+COPY . .
+RUN chmod +x start.sh
+
+ENV DATABASE_PATH=/data/gaokao.db
+
+EXPOSE 5000
+
+CMD ["./start.sh"]
