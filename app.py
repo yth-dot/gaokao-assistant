@@ -54,7 +54,8 @@ def download_code():
 
 
 if __name__ == "__main__":
-    from models.database import init_db
-    init_db()
-    print("🚀 高考志愿填报助手启动: http://localhost:5000")
-    app.run(host="0.0.0.0", port=5000, debug=DEBUG)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    print(f"🚀 启动 http://0.0.0.0:{port}")
+    app.run(host="0.0.0.0", port=port, debug=False)
+
