@@ -4,6 +4,20 @@ from config import SECRET_KEY, DEBUG
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+# 自动保活：每8分钟调用自身 health 接口，防止 Render 休眠
+import threading, time, requests, os
+
+def keepalive():
+    time.sleep(60)
+    url = f"http://localhost:{os.environ.get('PORT', 5000)}/health"
+    while True:
+        try:
+            requests.get(url, timeout=10)
+        except:
+            pass
+        time.sleep(480)
+
+threading.Thread(target=keepalive, daemon=True).start()
 
 # 注册路由
 from routes.api_schools import schools_bp
