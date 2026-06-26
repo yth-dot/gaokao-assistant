@@ -905,12 +905,28 @@ a{text-decoration:none}
         }).catch(function() {});
       }
 
+      // 常用省份列表（兜底，后端无数据时也能正常显示）
+      var ALL_PROVINCES = [
+        '北京','天津','河北','山西','内蒙古',
+        '辽宁','吉林','黑龙江',
+        '上海','江苏','浙江','安徽','福建','江西','山东',
+        '河南','湖北','湖南','广东','广西','海南',
+        '重庆','四川','贵州','云南','西藏',
+        '陕西','甘肃','青海','宁夏','新疆',
+        '台湾','香港','澳门'
+      ];
+
       function loadProvinces() {
         fetchJSON(API + '/schools/stats').then(function(d) {
-          if (d.code === 0) {
-            provinces.value = (d.data.by_province || []).map(function(r) { return r.name; });
+          if (d.code === 0 && d.data.by_province && d.data.by_province.length > 0) {
+            provinces.value = d.data.by_province.map(function(r) { return r.name; });
+          } else {
+            // 后端无数据时用固定列表兜底
+            provinces.value = ALL_PROVINCES;
           }
-        }).catch(function() {});
+        }).catch(function() {
+          provinces.value = ALL_PROVINCES;
+        });
       }
 
       // --- Schools ---
